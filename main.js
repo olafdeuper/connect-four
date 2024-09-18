@@ -9,6 +9,13 @@ const neuesSpiel = document.getElementById("neuesSpiel");
 // Maße des Spielfelds in Feldern festlegen:
 const maxCols = 7;
 const maxRows = 6;
+// flags für volle slots
+let fl_s0 = false;
+let fl_s1 = false;
+let fl_s2 = false;
+let fl_s3 = false;
+let fl_s4 = false;
+let fl_s5 = false;
 // Initialisierung des Spielfeld Arrays
 let spielfeld = new Array(maxRows);
 //Initialisierung des 1. Spielers
@@ -49,30 +56,48 @@ window.onload = () => {
   for (let rows = 0; rows < maxRows; rows++) {
     //Innere Schleife durchläuft alle Spalten
     for (let cols = 0; cols < maxCols; cols++) {
+      // String N steht für leeres Feld
       spielfeld[rows][cols] = "N";
-
-      // // String für die Suche nach dem Element mit der id colrow erstellen
-      // let strColRow = cols.toString() + rows.toString();
-      // // Element mit der id colrow finden
-      // let aktField = document.getElementById(strColRow);
-      // // dem aktuellen Element die Klasse chip-black zuweisen
-      // // sorgt für ein leeres Spielfeld (schwarze Löcher)
-      // aktField.classList.add("chip-black");
     }
   }
+
+  // Flags für volle Slots zurücksetzen
+  fl_s0 = false;
+  fl_s1 = false;
+  fl_s2 = false;
+  fl_s3 = false;
+  fl_s4 = false;
+  fl_s5 = false;
+  // Gelb fängt an
+  h1spieler.innerHTML = "Gelb ist am Zug:";
+  //Spielfeld aufgrund der Einträge im Array aktualisiern
   mapArray();
 };
 
+// mapArray überträgt die Einträge Y, R oder N auf das css Spielfeld
 const mapArray = function () {
+  // speichert den String an der aktuellen Position im Array
   let field;
+  // enthält die Klasse, die die korrekten Farben für die Darstellung
+  // des Chips bzw. des leeren Feldes enthält
   let strClass;
+  // enthält die id mit dem das korrespondierende Feld in css angesprochen
+  // wird.
   let strColRow;
+  // enthält das Feld als html Element, das mittels der id ermittelt wird
   let actField;
+
+  // loop durchläuf die Reihen des Array
   for (let rows = 0; rows < maxRows; rows++) {
+    // loop durchläuft die Spalten des Array
     for (let cols = 0; cols < maxCols; cols++) {
+      // char im aktuellen Feld ermitteln R,N,Y
       field = spielfeld[rows][cols];
+      // Klassen String Variable zurücksetzen
       strClass = "";
+      // String der korrespodierenden Id zusammensetzen
       strColRow = rows.toString() + cols.toString();
+      // korrekte Klasse aufgrund des im Array eingetragenen Strings auswählen
       switch (field) {
         case "N":
           strClass = "chip-black";
@@ -84,33 +109,80 @@ const mapArray = function () {
           strClass = "chip-yellow";
           break;
       }
+      // Das korrespondierende Element im Html/css ermitteln
       actField = document.getElementById(strColRow);
+      // aus der Initialisierung vorhandene Klasse des
+      // leeren Feldes entferenen
       actField.classList.remove("chip-black");
+      // Neue Klasse zuweisen Y = chip-yellow, R = chip-red
       actField.classList.add(strClass);
     }
   }
 };
 
-const calcRow = function (col) {
+// Wie bei dem realen Spiel sollen die Spalten von unten nach
+// oben aufgefüllt werden. calcRow sorgt dafür
+const calcRow = function (col, colClass) {
+  // Nimmt den Wert der letzten freien Reihe im Slot auf
   let lastFreeRow = 0;
+  // loop durchläuft den angeklickten Spaltenvektor
+  // und ermittelt die letzte freie Zelle von oben
   while (lastFreeRow < maxRows) {
+    // Ein bereits belegtes Feld enthält nicht den char N
     if (spielfeld[lastFreeRow][col] !== "N") {
-      console.log(lastFreeRow);
+      // Wenn der Slot voll ist deaktiviere den insert Chip button
+      if (lastFreeRow === 1) {
+        colClass.onclick = "";
+        console.log(colClass.id);
+        switch (colClass.id) {
+          case "slot-0":
+            fl_s0 = true;
+            break;
+        }
+      }
+      // da zero-based, muss der ermittelte Reihenwert um 1 vermindert werden
       return lastFreeRow - 1;
     }
     lastFreeRow++;
   }
-  return 5;
+  // Default Wert, falls alle Felder frei sind
+  return maxRows - 1;
+};
+// Hilfsfunktion die true zurückgibt wenn alle slots voll sind
+const allSlotsFilled = function () {
+  if (fl_s0 && fl_s1 && fl_s2 && fl_s3 && fl_s4 && fl_s5) {
+    return true;
+  }
+  return false;
 };
 
+// Hauptfunktion des Spiels, wertet die Mausclicks auf dem Spielbrett aus
 function ClickFunction(item) {
-  let col;
+  anzClicks++;
+  console.log(fl_s0);
+  // col nimmt den Wert der Spalte des angeklickten insert chip Feldes auf
+  // Spalte aus dem letzen letter des Klassenstrings ermitteln
+  let col = item.target.id.slice(-1) * 1;
+  // Nur das parent-Element soll seine Klasse zurückgeben
   if (item.target !== item.currentTarget) return;
-  col = item.target.id.slice(-1) * 1;
+  //spielfeld[calcRow(col, item.target)][col] = "Y";
+  if (spieler === "Spieler-1") {
+    h1spieler.innerHTML = "Rot ist am Zug:";
+    spieler = "Spieler-2";
+    spielfeld[calcRow(col, item.target)][col] = "Y";
+    mapArray();
 
-  spielfeld[calcRow(col)][col] = "Y";
+    //
 
-  mapArray();
+    //     gibtGewinner = isGewinner(1, row, col);
+  } else {
+    h1spieler.innerHTML = "Gelb ist am Zug:";
+    spieler = "Spieler-1";
+    spielfeld[calcRow(col, item.target)][col] = "R";
+    mapArray();
+
+    //     gibtGewinner = isGewinner(-1, row, col);
+  }
 }
 //   for (let i = 0; i < 6; i++) {
 //     let strI = "row-" + i.toString();
