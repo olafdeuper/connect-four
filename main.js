@@ -16,12 +16,11 @@ let fl_s2 = false;
 let fl_s3 = false;
 let fl_s4 = false;
 let fl_s5 = false;
+let fl_s6 = false;
 // Initialisierung des Spielfeld Arrays
 let spielfeld = new Array(maxRows);
 //Initialisierung des 1. Spielers
 let spieler = "Spieler-1";
-//Wie oft wurde ein Chip eingeworfen, bei 42 ist Schluss
-let anzClicks = 0;
 //Variable speichert den Sieger
 let gibtGewinner = "";
 
@@ -68,13 +67,25 @@ window.onload = () => {
   fl_s3 = false;
   fl_s4 = false;
   fl_s5 = false;
+  fl_s6 = false;
+
+  // Neues Spiel Button unsichtbar machen und
+  // Click Funktionalität entfernen
+  neuesSpiel.children[0].style.opacity = 0;
+  neuesSpiel.onclick = "";
   // Gelb fängt an
   h1spieler.innerHTML = "Gelb ist am Zug:";
   //Spielfeld aufgrund der Einträge im Array aktualisiern
   mapArray();
 };
 
+// Startet das Spiel neu
+function funcNewGame() {
+  window.location.reload();
+}
+
 // mapArray überträgt die Einträge Y, R oder N auf das css Spielfeld
+// und setzt rote, gelbe oder keine Chips an die richtige Stelle
 const mapArray = function () {
   // speichert den String an der aktuellen Position im Array
   let field;
@@ -133,10 +144,35 @@ const calcRow = function (col, colClass) {
       // Wenn der Slot voll ist deaktiviere den insert Chip button
       if (lastFreeRow === 1) {
         colClass.onclick = "";
-        console.log(colClass.id);
+        // Wenn ein Slot voll ist, setze das jeweilige Flag auf true
         switch (colClass.id) {
           case "slot-0":
             fl_s0 = true;
+            console.log("fl_s0 = true");
+            break;
+          case "slot-1":
+            fl_s1 = true;
+            console.log("fl_s1 = true");
+            break;
+          case "slot-2":
+            fl_s2 = true;
+            console.log("fl_s2 = true");
+            break;
+          case "slot-3":
+            fl_s3 = true;
+            console.log("fl_s3 = true");
+            break;
+          case "slot-4":
+            fl_s4 = true;
+            console.log("fl_s4 = true");
+            break;
+          case "slot-5":
+            fl_s5 = true;
+            console.log("fl_s5 = true");
+            break;
+          case "slot-6":
+            console.log("fl_s6 = true");
+            fl_s6 = true;
             break;
         }
       }
@@ -148,40 +184,88 @@ const calcRow = function (col, colClass) {
   // Default Wert, falls alle Felder frei sind
   return maxRows - 1;
 };
+
 // Hilfsfunktion die true zurückgibt wenn alle slots voll sind
 const allSlotsFilled = function () {
-  if (fl_s0 && fl_s1 && fl_s2 && fl_s3 && fl_s4 && fl_s5) {
+  if (
+    fl_s0 === true &&
+    fl_s1 === true &&
+    fl_s2 === true &&
+    fl_s3 === true &&
+    fl_s4 === true &&
+    fl_s5 === true
+  ) {
     return true;
   }
   return false;
 };
 
+// Hilfsfunktion, die alle Slots ausser Funktion setzt sobald es
+// einen Gewinner gibt
+const disableSlots = function () {
+  for (let i = 0; i < maxCols; i++) {
+    // slots von slot-0 bis slot-6 deaktivieren
+    playGround[0].children[i].children[0].onclick = "";
+  }
+};
+
+// Ermittelt den Gewinner und gibt ihn als string zurück
+const isWinner = function (player, row, col) {
+  return "Rot gewinnt!";
+};
+
 // Hauptfunktion des Spiels, wertet die Mausclicks auf dem Spielbrett aus
 function ClickFunction(item) {
-  anzClicks++;
-  console.log(fl_s0);
-  // col nimmt den Wert der Spalte des angeklickten insert chip Feldes auf
-  // Spalte aus dem letzen letter des Klassenstrings ermitteln
-  let col = item.target.id.slice(-1) * 1;
+  // Enthält die Reihe des zuletzt gesetzen Chips
+  let actRow;
+  let winner;
+  // actCol nimmt den Wert der Spalte des angeklickten insert chip Feldes auf
+  // Spalte aus dem letzen Buchstaben des Klassenstrings ermitteln
+  let actCol = item.target.id.slice(-1) * 1;
   // Nur das parent-Element soll seine Klasse zurückgeben
   if (item.target !== item.currentTarget) return;
   //spielfeld[calcRow(col, item.target)][col] = "Y";
   if (spieler === "Spieler-1") {
     h1spieler.innerHTML = "Rot ist am Zug:";
     spieler = "Spieler-2";
-    spielfeld[calcRow(col, item.target)][col] = "Y";
+    actRow = calcRow(actCol, item.target);
+    spielfeld[actRow][actCol] = "Y";
+    winner = isWinner(spieler, actRow, actCol);
     mapArray();
-
-    //
 
     //     gibtGewinner = isGewinner(1, row, col);
   } else {
     h1spieler.innerHTML = "Gelb ist am Zug:";
     spieler = "Spieler-1";
-    spielfeld[calcRow(col, item.target)][col] = "R";
+    actRow = calcRow(actCol, item.target);
+    spielfeld[actRow][actCol] = "R";
+    winner = isWinner(spieler, actRow, actCol);
     mapArray();
 
     //     gibtGewinner = isGewinner(-1, row, col);
+  }
+
+  // Wenn alle slots gefüllt sind und es bis dahin keinen
+  // Gewinner gab, ist es unentschieden
+  if (allSlotsFilled() === true) {
+    h1spieler.innerHTML = "Unentschieden!";
+    neuesSpiel.children[0].style.opacity = 1;
+    neuesSpiel.onclick = funcNewGame;
+    console.log(spielfeld);
+  }
+
+  if (winner === "Gelb gewinnt!") {
+    h1spieler.innerHTML = winner;
+    disableSlots();
+    neuesSpiel.children[0].style.opacity = 1;
+    neuesSpiel.onclick = funcNewGame;
+  }
+
+  if (winner === "Rot gewinnt!") {
+    h1spieler.innerHTML = winner;
+    disableSlots();
+    neuesSpiel.children[0].style.opacity = 1;
+    neuesSpiel.onclick = funcNewGame;
   }
 }
 //   for (let i = 0; i < 6; i++) {
@@ -244,10 +328,6 @@ function ClickFunction(item) {
 //     neuesSpiel.children[0].style.opacity = 1;
 //     neuesSpiel.onclick = funcNewGame;
 //   }
-// }
-
-// function funcNewGame() {
-//   window.location.reload();
 // }
 
 // function isGewinner(nrspieler, row, col) {
