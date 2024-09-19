@@ -1,12 +1,12 @@
 "use strict";
 
-//css Spielfelder einlesen
+//css gameFielder einlesen
 const playGround = document.getElementsByClassName("play-ground");
 //css Spieler Anzeige
 const h1spieler = document.querySelector("#welcherSpieler>h1");
 // css neues Spiel button
 const neuesSpiel = document.getElementById("neuesSpiel");
-// Maße des Spielfelds in Feldern festlegen:
+// Maße des gameFields in Feldern festlegen:
 const maxCols = 7;
 const maxRows = 6;
 // flags für volle slots
@@ -17,18 +17,18 @@ let fl_s3 = false;
 let fl_s4 = false;
 let fl_s5 = false;
 let fl_s6 = false;
-// Initialisierung des Spielfeld Arrays
-let spielfeld = new Array(maxRows);
+// Initialisierung des gameField Arrays
+let gameField = new Array(maxRows);
 //Initialisierung des 1. Spielers
-let spieler = "Spieler-1";
+let spieler = "Spieler-2";
 //Variable speichert den Sieger
 let gibtGewinner = "";
 
-// Das Css Spielfeld wurde geladen
+// Das Css gameField wurde geladen
 window.onload = () => {
-  // 2.Dimension des Spielfeldes
-  for (let i = 0; i < spielfeld.length; i++) {
-    spielfeld[i] = new Array(maxCols);
+  // 2.Dimension des gameFieldes
+  for (let i = 0; i < gameField.length; i++) {
+    gameField[i] = new Array(maxCols);
   }
   // Initialisierung der Schaltflächen für den Chip-Einwurf
   for (let i = 0; i < maxCols; i++) {
@@ -50,13 +50,13 @@ window.onload = () => {
         strRowCol;
     }
   }
-  //Alle Spielfelder leeren und als schwarze Löcher darstellen
+  //Alle gameFielder leeren und als schwarze Löcher darstellen
   //Äußere Schleife durchläuft alle Zeilen
   for (let rows = 0; rows < maxRows; rows++) {
     //Innere Schleife durchläuft alle Spalten
     for (let cols = 0; cols < maxCols; cols++) {
       // String N steht für leeres Feld
-      spielfeld[rows][cols] = "N";
+      gameField[rows][cols] = "N";
     }
   }
 
@@ -74,8 +74,8 @@ window.onload = () => {
   neuesSpiel.children[0].style.opacity = 0;
   neuesSpiel.onclick = "";
   // Gelb fängt an
-  h1spieler.innerHTML = "Gelb ist am Zug:";
-  //Spielfeld aufgrund der Einträge im Array aktualisiern
+  h1spieler.innerHTML = "Rot ist am Zug:";
+  //gameField aufgrund der Einträge im Array aktualisiern
   mapArray();
 };
 
@@ -84,7 +84,7 @@ function funcNewGame() {
   window.location.reload();
 }
 
-// mapArray überträgt die Einträge Y, R oder N auf das css Spielfeld
+// mapArray überträgt die Einträge Y, R oder N auf das css gameField
 // und setzt rote, gelbe oder keine Chips an die richtige Stelle
 const mapArray = function () {
   // speichert den String an der aktuellen Position im Array
@@ -103,7 +103,7 @@ const mapArray = function () {
     // loop durchläuft die Spalten des Array
     for (let cols = 0; cols < maxCols; cols++) {
       // char im aktuellen Feld ermitteln R,N,Y
-      field = spielfeld[rows][cols];
+      field = gameField[rows][cols];
       // Klassen String Variable zurücksetzen
       strClass = "";
       // String der korrespodierenden Id zusammensetzen
@@ -140,7 +140,7 @@ const calcRow = function (col, colClass) {
   // und ermittelt die letzte freie Zelle von oben
   while (lastFreeRow < maxRows) {
     // Ein bereits belegtes Feld enthält nicht den char N
-    if (spielfeld[lastFreeRow][col] !== "N") {
+    if (gameField[lastFreeRow][col] !== "N") {
       // Wenn der Slot voll ist deaktiviere den insert Chip button
       if (lastFreeRow === 1) {
         colClass.onclick = "";
@@ -208,10 +208,146 @@ const disableSlots = function () {
     playGround[0].children[i].children[0].onclick = "";
   }
 };
+// Kopiert eine Diagonale an der Position
+// des aktuell gesetzen Chips in einen Vektor
+function searchDiagRight(row, col) {
+  let z = col;
+  let k = row;
+  const rightAbove = [];
+  const leftBelow = [];
+  let compRow = [];
+  // Diagonale rechts oben ab der aktuellen Position kopieren,
+  // inklusive der aktuellen Position
+  while (k >= 0 && z < 7) {
+    rightAbove.push(gameField[k][z]);
+    k--;
+    z++;
+  }
+  z = col - 1;
+  k = row + 1;
+  // Diagonale links unterhalb der aktuellen Position kopieren
+  while (k < 6 && z >= 0) {
+    leftBelow.push(gameField[k][z]);
+    k++;
+    z--;
+  }
+  // die Werte in dem oberen Vektor umdrehen und mit dem unteren verbinden
+  compRow = rightAbove.reverse().concat(leftBelow);
+  // Auf vier gleiche Buchstaben nebeneinander testen
+  return winsFour(compRow);
+}
+
+// Kopiert eine Diagonale an der Position
+// des aktuell gesetzen Chips in einen Vektor
+function searchDiagLeft(row, col) {
+  let z = col;
+  let k = row;
+  const leftAbove = [];
+  const rightBelow = [];
+  let gesReihe = [];
+  // Diagonale links oben ab der aktuellen Position kopieren,
+  // inklusive der aktuellen Position
+  while (k >= 0 && z >= 0) {
+    leftAbove.push(gameField[k][z]);
+    k--;
+    z--;
+  }
+  z = col + 1;
+  k = row + 1;
+  // Diagonale rechts unterhalb der aktuellen Position kopieren
+  while (k < 6 && z < 7) {
+    rightBelow.push(gameField[k][z]);
+    k++;
+    z++;
+  }
+  // die Werte in dem oberen Vektor umdrehen und mit dem unteren verbinden
+  gesReihe = leftAbove.reverse().concat(rightBelow);
+  // Auf vier gleiche Buchstaben nebeneinander testen
+  return winsFour(gesReihe);
+}
+
+// Kopiert die Reihe an der Position
+// des aktuell gesetzen Chips in einen Vektor
+function searchRow(row, col) {
+  let z = col;
+  let k = col + 1;
+  const left = [];
+  const right = [];
+  let compRow = [];
+  // linke Reihe ab der aktuellen Position kopieren,
+  // inklusive der aktuellen Position
+  while (z >= 0) {
+    left.push(gameField[row][z]);
+    z--;
+  }
+  // Reihe rechts der aktuellen Position kopieren
+  while (k < 7) {
+    right.push(gameField[row][k]);
+    k++;
+  }
+  // die Werte im linken Vektor umdrehen und mit dem rechten verbinden
+  compRow = left.reverse().concat(right);
+  // Auf vier gleiche Buchstaben nebeneinander testen
+  return winsFour(compRow);
+}
+
+// Kopiert die Spalte an der Position
+// des aktuell gesetzen Chips in einen Vektor
+function searchCol(row, col) {
+  let z = row;
+  let k = row + 1;
+  const above = [];
+  const below = [];
+  let compCol = [];
+  //Spalte oberhalb der aktuellen Position kopieren inklusive der aktuellen Position
+  while (z >= 0) {
+    above.push(gameField[z][col]);
+    z--;
+  }
+  //Spalte unterhalb der aktuellen Position kopieren
+  while (k < 6) {
+    below.push(gameField[k][col]);
+    k++;
+  }
+  console.log(below);
+  // die Werte im unteren Vektor umdrehen und mit dem oberen verbinden
+  compCol = below.reverse().concat(above);
+  // Auf vier gleiche Buchstaben nebeneinander testen
+  return winsFour(compCol);
+}
+
+//Testet ob sich vier gleichfarbige Chips nebeneinander befinden
+function winsFour(testArr) {
+  console.log(testArr);
+  //Spaltenvektor in einen String ohne Zwischenräume wandeln
+  const arrText = testArr.join("");
+  //Test ob sich vier Rs oder vier Ys nebeneinander in dem String befinden
+  //falls ja, true zurückgeben
+  const result = arrText.search("RRRR") !== -1 || arrText.search("YYYY") !== -1;
+  return result;
+}
 
 // Ermittelt den Gewinner und gibt ihn als string zurück
 const isWinner = function (player, row, col) {
-  return "Rot gewinnt!";
+  console.log(player);
+  let result = "";
+  // Vertikale, horizontale und diagonale Achsen auf vier gleiche
+  // Zeichen (R oder Y) üperprüfen
+  if (
+    searchCol(row, col) === true ||
+    searchRow(row, col) === true ||
+    searchDiagLeft(row, col) === true ||
+    searchDiagRight(row, col)
+  ) {
+    // Wenn in einer der Achsen vier gleiche Zeichen gefunden wurden
+    // Gewinner zurückgeben
+    if (player === "Spieler-1") {
+      result = "Rot gewinnt!";
+    } else {
+      result = "Gelb gewinnt!";
+    }
+  }
+  return result;
 };
 
 // Hauptfunktion des Spiels, wertet die Mausclicks auf dem Spielbrett aus
@@ -219,30 +355,46 @@ function ClickFunction(item) {
   // Enthält die Reihe des zuletzt gesetzen Chips
   let actRow;
   let winner;
+
   // actCol nimmt den Wert der Spalte des angeklickten insert chip Feldes auf
   // Spalte aus dem letzen Buchstaben des Klassenstrings ermitteln
   let actCol = item.target.id.slice(-1) * 1;
   // Nur das parent-Element soll seine Klasse zurückgeben
   if (item.target !== item.currentTarget) return;
-  //spielfeld[calcRow(col, item.target)][col] = "Y";
+
+  //Spieler werden mit jedem Einfurf eines Chips gewechselt
+  // also mit jedem neuen Aufruf der ClickFunKtion
+  // wenn Spieler-1 (R) dran war wechselt es zu Spieler-2 (Y)
   if (spieler === "Spieler-1") {
+    //Anzeige wechseln bevor der nächste Spieler dran ist
     h1spieler.innerHTML = "Rot ist am Zug:";
+    //Spieler-2 ist dran
     spieler = "Spieler-2";
+    //Aus der angeklickten Spalte die Reihe berechnen,
+    // das letzte freie Feld von oben gesehen
     actRow = calcRow(actCol, item.target);
-    spielfeld[actRow][actCol] = "Y";
-    winner = isWinner(spieler, actRow, actCol);
+    // im Spielfeld Array das gespielte Feld mit
+    // der korrekten Markierung (Y) versehen
+    gameField[actRow][actCol] = "Y";
+    // nach dem Zug, das Array aktualisieren
     mapArray();
-
-    //     gibtGewinner = isGewinner(1, row, col);
+    //Überprüfen ob der Zug zum Sieg führte
+    winner = isWinner(spieler, actRow, actCol);
   } else {
+    //Anzeige wechseln bevor der nächste Spieler dran ist
     h1spieler.innerHTML = "Gelb ist am Zug:";
+    //Spieler-1 ist dran
     spieler = "Spieler-1";
+    //Aus der angeklickten Spalte die Reihe berechnen,
+    // das letzte freie Feld von oben gesehen
     actRow = calcRow(actCol, item.target);
-    spielfeld[actRow][actCol] = "R";
-    winner = isWinner(spieler, actRow, actCol);
+    // im Spielfeld Array das gespielte Feld mit
+    // der korrekten Markierung (R) versehen
+    gameField[actRow][actCol] = "R";
+    // nach dem Zug, das Array aktualisieren
     mapArray();
-
-    //     gibtGewinner = isGewinner(-1, row, col);
+    //Überprüfen ob der Zug zum Sieg führte
+    winner = isWinner(spieler, actRow, actCol);
   }
 
   // Wenn alle slots gefüllt sind und es bis dahin keinen
@@ -251,7 +403,7 @@ function ClickFunction(item) {
     h1spieler.innerHTML = "Unentschieden!";
     neuesSpiel.children[0].style.opacity = 1;
     neuesSpiel.onclick = funcNewGame;
-    console.log(spielfeld);
+    console.log(gameField);
   }
 
   if (winner === "Gelb gewinnt!") {
@@ -268,142 +420,22 @@ function ClickFunction(item) {
     neuesSpiel.onclick = funcNewGame;
   }
 }
-//   for (let i = 0; i < 6; i++) {
-//     let strI = "row-" + i.toString();
-//     tableRows[i].id = strI;
-//     for (let j = 0; j < 7; j++) {
-//       let strJ = "col-" + j.toString();
-//       tableRows[i].children[j].id = strJ;
-//       let strIJ = j.toString() + i.toString();
-//       tableRows[i].children[j].children[0].children[0].id = strIJ;
-//       tableRows[i].children[j].children[0].children[0].onclick = ClickFunction;
-//       spielfeld[i][j] = "";
-//     }
-//   }
 
-//   h1spieler.innerHTML = "Grün ist am Zug:";
-//   anzClicks = 0;
-// };
-
-// function ClickFunction(ding) {
-//   let col = (ding.target.id - (ding.target.id % 10)) / 10;
-//   let row = ding.target.id % 10;
-//   let newRow;
-//   anzClicks++;
-
-//   if (spieler === "Spieler-1") {
-//     ding.target.src = "./media/GreenChip100x100.png";
-//     h1spieler.innerHTML = "Rot ist am Zug:";
-//     spieler = "Spieler-2";
-//     newRow = getSlotPlace(col);
-//     spielfeld[newRow][col] = "G";
-//     gibtGewinner = isGewinner(1, row, col);
-//   } else {
-//     ding.target.src = "./media/RedChip100x100.png";
-//     h1spieler.innerHTML = "Grün ist am Zug:";
-//     spieler = "Spieler-1";
-//     newRow = getSlotPlace(col);
-//     spielfeld[newRow][col] = "R";
-//     gibtGewinner = isGewinner(-1, row, col);
-//   }
-
-//   ding.target.onclick = "";
-
-//   if (anzClicks === 42) {
-//     h1spieler.innerHTML = "Unentschieden!";
-//     neuesSpiel.children[0].style.opacity = 1;
-//     neuesSpiel.onclick = funcNewGame;
-//     console.log(spielfeld);
-//   }
-//   if (gibtGewinner === "Grün gewinnt!") {
-//     h1spieler.innerHTML = gibtGewinner;
-//     killOnclick();
-//     neuesSpiel.children[0].style.opacity = 1;
-//     neuesSpiel.onclick = funcNewGame;
-//   }
-
-//   if (gibtGewinner === "Rot gewinnt!") {
-//     h1spieler.innerHTML = gibtGewinner;
-//     killOnclick();
-//     neuesSpiel.children[0].style.opacity = 1;
-//     neuesSpiel.onclick = funcNewGame;
-//   }
-// }
-
-// function isGewinner(nrspieler, row, col) {
-//   let result = "";
-//   if (
-//     sucheSpalte(row, col) ||
-//     sucheReihe(row, col) ||
-//     sucheDiagLinks(row, col) ||
-//     sucheDiagRechts(row, col)
-//   ) {
-//     if (nrspieler === 1) {
-//       result = "Grün gewinnt!";
-//     } else {
-//       result = "Rot gewinnt!";
-//     }
-//   }
-//   return result;
-// }
-
-// function killOnclick() {
-//   for (let i = 0; i < 42; i++) {
-//     tableImgs[i].onclick = "";
-//   }
-// }
-
-// function sucheSpalte(row, col) {
-//   let z = row;
-//   let k = row + 1;
-//   const oben = [];
-//   const unten = [];
-//   let gesSpalte = [];
-//   while (z >= 0) {
-//     oben.push(spielfeld[z][col]);
-//     z--;
-//   }
-//   while (k < 6) {
-//     unten.push(spielfeld[k][col]);
-//     k++;
-//   }
-//   gesSpalte = unten.reverse().concat(oben);
-//   return gewinntVier(gesSpalte);
-// }
-
-// function sucheReihe(row, col) {
-//   let z = col;
-//   let k = col + 1;
-//   const links = [];
-//   const rechts = [];
-//   let gesReihe = [];
-//   while (z >= 0) {
-//     links.push(spielfeld[row][z]);
-//     z--;
-//   }
-//   while (k < 7) {
-//     rechts.push(spielfeld[row][k]);
-//     k++;
-//   }
-//   gesReihe = links.reverse().concat(rechts);
-//   return gewinntVier(gesReihe);
-// }
-
-// function sucheDiagLinks(row, col) {
+// function searchDiagLeft(row, col) {
 //   let z = col;
 //   let k = row;
-//   const linksOben = [];
-//   const rechtsUnten = [];
+//   const leftOben = [];
+//   const rightUnten = [];
 //   let gesReihe = [];
 //   while (k >= 0 && z >= 0) {
-//     linksOben.push(spielfeld[k][z]);
+//     leftOben.push(gameField[k][z]);
 //     k--;
 //     z--;
 //   }
 //   z = col + 1;
 //   k = row + 1;
 //   while (k < 6 && z < 7) {
-//     rechtsUnten.push(spielfeld[k][z]);
+//     rrightUnten.push(gameField[k][z]);
 //     k++;
 //     z++;
 //   }
@@ -411,39 +443,28 @@ function ClickFunction(item) {
 //   return gewinntVier(gesReihe);
 // }
 
-// function sucheDiagRechts(row, col) {
+// function sucheDiagRight(row, col) {
 //   let z = col;
 //   let k = row;
-//   const rechtsOben = [];
-//   const linksUnten = [];
+//   const rightOben = [];
+//   const leftUnten = [];
 //   let gesReihe = [];
 //   while (k >= 0 && z < 7) {
-//     rechtsOben.push(spielfeld[k][z]);
+//     rightOben.push(gameField[k][z]);
 //     k--;
 //     z++;
 //   }
 //   z = col - 1;
 //   k = row + 1;
 //   while (k < 6 && z >= 0) {
-//     linksUnten.push(spielfeld[k][z]);
+//     leftUnten.push(gameField[k][z]);
 //     k++;
 //     z--;
 //   }
-//   gesReihe = rechtsOben.reverse().concat(linksUnten);
+//   gesReihe = rightOben.reverse().concat(leftUnten);
 //   return gewinntVier(gesReihe);
 // }
 
-// function gewinntVier(testArr) {
-//   const arrText = testArr.join("");
-//   const result = arrText.search("RRRR") !== -1 || arrText.search("GGGG") !== -1;
-//   if (result) {
-//     console.log(result);
-//     console.log(arrText);
-//   }
-
-//   return result;
-// }
-
-// function getSlotPlace(col) {
-//   return 0;
-// }
+//function getSlotPlace(col) {
+//return 0;
+//}
